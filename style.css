@@ -26,15 +26,7 @@
   --container-width: 1100px;
   --transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
-  /* Per-section accent colors */
-  --sec-brunch: #5a9a7e;
-  --sec-smallplates: #3d7c68;
-  --sec-burgers: #498a72;
-  --sec-fiesta: #3b7060;
-  --sec-pasta: #4e9478;
-  --sec-pizza: #2f6654;
-  --sec-mains: #3a7566;
-  --sec-sundaes: #4a8e74;
+  /* Using a unified background rather than separate sections */
 }
 
 /* ---------- Reset & Base ---------- */
@@ -298,18 +290,26 @@ body {
   padding: var(--section-padding);
   position: relative;
   z-index: 1;
-  transition: background 0.6s ease;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* Section-specific background tints */
-.menu-section[data-section="brunch"]      { background: linear-gradient(180deg, var(--sec-brunch), var(--bg-primary)); }
-.menu-section[data-section="smallplates"] { background: linear-gradient(180deg, var(--sec-smallplates), var(--bg-primary)); }
-.menu-section[data-section="burgers"]     { background: linear-gradient(180deg, var(--sec-burgers), var(--bg-primary)); }
-.menu-section[data-section="fiesta"]      { background: linear-gradient(180deg, var(--sec-fiesta), var(--bg-primary)); }
-.menu-section[data-section="pasta"]       { background: linear-gradient(180deg, var(--sec-pasta), var(--bg-primary)); }
-.menu-section[data-section="pizza"]       { background: linear-gradient(180deg, var(--sec-pizza), var(--bg-primary)); }
-.menu-section[data-section="mains"]       { background: linear-gradient(180deg, var(--sec-mains), var(--bg-primary)); }
-.menu-section[data-section="sundaes"]     { background: linear-gradient(180deg, var(--sec-sundaes), var(--bg-primary)); }
+.menu-section:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.08); /* subtle alternating effect, not a completely different color */
+}
+
+/* Float illustrations as watermarks */
+.illustration-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  max-width: 550px; /* Keep it constrained to bottom right */
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.25; /* Subtle watermark */
+}
 
 .section-header {
   text-align: center;
