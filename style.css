@@ -631,7 +631,7 @@ body {
 /* ============================================
    RESPONSIVE
    ============================================ */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .menu-grid, .fiesta-styles { grid-template-columns: 1fr; gap: 0; }
   .cards-grid { grid-template-columns: 1fr; }
 
