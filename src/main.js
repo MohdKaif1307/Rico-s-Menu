@@ -45,10 +45,6 @@ function renderHero() {
         </div>
         <p class="hero-tagline">Brunch &middot; Small Plates &middot; Burgers &middot; Pizza &middot; Pasta &middot; Mains &middot; Sundaes</p>
       </div>
-      <div class="scroll-indicator">
-        <span>Explore Menu</span>
-        <div class="scroll-line"></div>
-      </div>
       <div class="hero-chapters">
         ${chapters.map(ch => `
           <a href="#/${ch.id}" class="hero-chapter-card" data-navigate="${ch.id}">
@@ -56,6 +52,10 @@ function renderHero() {
             <span class="hcc-title">${ch.title}</span>
           </a>
         `).join('')}
+      </div>
+      <div class="scroll-indicator">
+        <span>Explore Menu</span>
+        <div class="scroll-line"></div>
       </div>
     </section>
   `;
