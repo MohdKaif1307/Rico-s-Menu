@@ -635,6 +635,306 @@ body {
 @keyframes scrollPulse { 0%,100% { opacity: 1; transform: scaleY(1); } 50% { opacity: 0.4; transform: scaleY(0.6); } }
 
 /* ============================================
+   HERO CHAPTER CARDS — Landing Page Grid
+   ============================================ */
+.hero-chapters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  max-width: 900px;
+  margin: 60px auto 0;
+  padding: 0 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-chapter-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(212,175,85,0.1);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-chapter-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(212,175,85,0.08) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.hero-chapter-card:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(212,175,85,0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+}
+
+.hero-chapter-card:hover::before { opacity: 1; }
+
+.hcc-roman {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 3px;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+}
+
+.hcc-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.hero-chapter-card:hover .hcc-title { color: var(--gold); }
+
+/* ============================================
+   CHAPTER TRANSITION OVERLAY
+   ============================================ */
+.chapter-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.cto-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(170deg, #2a5e4e 0%, #346e5c 40%, #2d6252 100%);
+  transform-origin: top center;
+  will-change: transform;
+}
+
+.cto-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+}
+
+.cto-roman {
+  font-family: var(--font-heading);
+  font-size: clamp(3rem, 12vw, 8rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--gold);
+  letter-spacing: 12px;
+  line-height: 1;
+  will-change: transform, filter;
+}
+
+.cto-label {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--gold-dim);
+  letter-spacing: 5px;
+  text-transform: uppercase;
+}
+
+.cto-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 5vw, 3.2rem);
+  font-weight: 600;
+  color: var(--gold-light);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  line-height: 1.2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  perspective: 600px;
+}
+
+.cto-char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.cto-desc {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  max-width: 450px;
+}
+
+.cto-line {
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  transform-origin: center;
+}
+
+.cto-line-top { margin-bottom: 8px; }
+.cto-line-bottom { margin-top: 8px; }
+
+/* Particles */
+.cto-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cto-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  background: var(--gold);
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+
+/* ============================================
+   CHAPTER NAVIGATION (Prev / Next)
+   ============================================ */
+.chapter-nav {
+  margin-top: 60px;
+  padding: 30px 0 0;
+  border-top: 1px solid rgba(212,175,85,0.1);
+}
+
+.chapter-nav-inner {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.chapter-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(212,175,85,0.1);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.4s ease;
+  min-width: 200px;
+}
+
+.chapter-nav-btn:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(212,175,85,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+
+.chapter-nav-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: var(--gold-dim);
+  flex-shrink: 0;
+  transition: fill 0.3s ease;
+}
+
+.chapter-nav-btn:hover svg { fill: var(--gold); }
+
+.chapter-nav-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chapter-nav-next .chapter-nav-text { text-align: right; }
+
+.cnav-label {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 2px;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+}
+
+.cnav-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  color: var(--gold-light);
+  text-transform: uppercase;
+}
+
+.chapter-nav-btn:hover .cnav-title { color: var(--gold); }
+
+/* Chapter dots */
+.chapter-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chapter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(212,175,85,0.2);
+  border: 1px solid rgba(212,175,85,0.3);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.chapter-dot:hover {
+  background: rgba(212,175,85,0.4);
+  transform: scale(1.3);
+}
+
+.chapter-dot.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(212,175,85,0.4);
+}
+
+/* ============================================
+   PAGE CHAPTER — single page view tweaks
+   ============================================ */
+.page-chapter {
+  min-height: calc(100vh - 120px);
+  padding-bottom: 40px;
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 1024px) {
@@ -644,6 +944,12 @@ body {
   .subcategory h3 {
     white-space: normal;
     word-break: break-word;
+  }
+
+  .hero-chapters {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-width: 500px;
   }
 
   .nav-links {
@@ -769,6 +1075,14 @@ body {
 
   .chapter-banner { max-height: 40vh; }
   .hero h1 { letter-spacing: 5px; }
+
+  /* Chapter nav responsive */
+  .chapter-nav-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .chapter-nav-btn { min-width: 160px; flex: 1; }
+  .chapter-dots { order: -1; width: 100%; justify-content: center; margin-bottom: 10px; }
 }
 
 @media (max-width: 600px) {
@@ -783,4 +1097,25 @@ body {
   .back-to-top { bottom: 18px; right: 18px; width: 38px; height: 38px; }
   .hero-tagline { font-size: 1rem; letter-spacing: 1px; }
   .nav-links .nav-hint { display: none; }
+
+  .hero-chapters {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 40px;
+  }
+
+  .hero-chapter-card { padding: 16px 10px; }
+  .hcc-title { font-size: 0.72rem; letter-spacing: 1px; }
+
+  .chapter-nav-btn {
+    min-width: 0;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+  .cnav-title { font-size: 0.85rem; }
+  .cnav-label { font-size: 0.6rem; }
+  .chapter-nav-btn svg { width: 18px; height: 18px; }
+
+  .cto-roman { letter-spacing: 6px; }
+  .cto-title { letter-spacing: 3px; }
 }
