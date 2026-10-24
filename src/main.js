@@ -69,7 +69,7 @@ function renderHero() {
       <div class="hero-chapters">
         ${chapters.map(ch => `
           <a href="#/${ch.id}" class="hero-chapter-card" data-navigate="${ch.id}" data-tilt>
-            <span class="hcc-art"><img src="${ch.illustration}" alt="${ch.title} illustration" loading="lazy" /></span>
+            <span class="hcc-art" data-scroll-depth="0.22"><img src="${ch.illustration}" alt="${ch.title} illustration" loading="lazy" /></span>
             <span class="hcc-title">${ch.title}</span>
             ${ch.desc ? `<span class="hcc-description">${ch.desc}</span>` : ''}
             <span class="hcc-arrow" aria-hidden="true">↗</span>
