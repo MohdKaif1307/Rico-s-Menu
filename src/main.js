@@ -88,7 +88,7 @@ function mountCinematicScene() {
     '  vNormal = mat3(uModel) * aNormal;',
     '  gl_Position = uMvp * vec4(aPosition, 1.0);',
     '}'
-  ].join('\\n');
+  ].join('\n');
   const fragmentSource = [
     'precision mediump float;',
     'uniform vec3 uColor;',
@@ -106,7 +106,7 @@ function mountCinematicScene() {
     '  vec3 color = uColor * (0.24 + diffuse * 0.70) + vec3(0.20, 0.15, 0.055) * rim + vec3(0.28, 0.23, 0.12) * specular;',
     '  gl_FragColor = vec4(color, uOpacity * (0.76 + rim * 0.24));',
     '}'
-  ].join('\\n');
+  ].join('\n');
 
   function compileShader(type, source) {
     const shader = gl.createShader(type);
