@@ -59,11 +59,20 @@ function mountCinematicScene() {
   window.__ricoRevealObserver=observer;
   window.__ricoScanReveals=function(){if(reduced)return;document.querySelectorAll('.page-chapter .section-header,.page-chapter .subcategory,.page-chapter .menu-card,.page-chapter .menu-item,.page-chapter .fiesta-style-item,.page-chapter .filling-chip').forEach(el=>{if(el.dataset.reveal==='true')return;el.dataset.reveal='true';observer.observe(el);});};
 }
+let chapterParallaxHandler = null;
 function applyChapterParallax(){
- const header=document.querySelector('.page-chapter .section-header');
- if(!header||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
- const update=()=>{const rect=header.getBoundingClientRect();const progress=Math.max(-1,Math.min(1,(window.innerHeight*.45-rect.top)/Math.max(1,window.innerHeight)));header.style.transform='translate3d(0,'+(-progress*9).toFixed(1)+'px,0)';};
- window.addEventListener('scroll',update,{passive:true});update();
+ if(chapterParallaxHandler) window.removeEventListener('scroll', chapterParallaxHandler);
+ chapterParallaxHandler = null;
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+ chapterParallaxHandler = () => {
+  const header = document.querySelector('.page-chapter .section-header');
+  if(!header) return;
+  const rect=header.getBoundingClientRect();
+  const progress=Math.max(-1,Math.min(1,(window.innerHeight*.45-rect.top)/Math.max(1,window.innerHeight)));
+  header.style.transform='translate3d(0,'+(-progress*9).toFixed(1)+'px,0)';
+ };
+ window.addEventListener('scroll', chapterParallaxHandler, {passive:true});
+ chapterParallaxHandler();
 }
 
 function renderHero() {
