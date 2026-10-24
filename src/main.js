@@ -6,6 +6,7 @@
 import { chapters, getChapter, getNextChapter, getPrevChapter, getChapterIndex } from './chapters.js';
 import { playChapterTransition, animatePageEntrance, animateHeroEntrance, fadeOutCurrentPage } from './transition.js';
 import gsap from 'gsap';
+import { initCinematicScene, setSceneChapter, setupScrollChoreography } from './cinematic-scene.js';
 
 // ── State ──
 let currentRoute = null;
@@ -293,7 +294,8 @@ function applyChapterParallax(){
 
 function renderHero() {
   return `
-    <section class="hero" id="hero">
+    <section class="hero hero-cinematic" id="hero">
+      <div class="hero-main">
       <div class="hero-content">
         <div class="hero-ornament">
           <span></span>
@@ -310,9 +312,29 @@ function renderHero() {
         </div>
         <p class="hero-tagline">Brunch &middot; Small Plates &middot; Burgers &middot; Pizza &middot; Pasta &middot; Mains &middot; Sundaes</p>
       </div>
+      <div class="hero-book-scene" aria-label="Rico's illustrated menu cover">
+        <div class="book-orbit book-orbit-one"></div>
+        <div class="book-orbit book-orbit-two"></div>
+        <div class="book-orbit book-orbit-three"></div>
+        <div class="book-glow"></div>
+        <div class="hero-book-shadow"></div>
+        <div class="hero-book" data-tilt>
+          <div class="book-edge"></div>
+          <img src="/images/cover.png" alt="Rico's All-Day Café & Dining illustrated menu cover" class="hero-book-cover" fetchpriority="high" />
+          <div class="book-glint"></div>
+        </div>
+        <div class="book-caption"><span>THE RICO'S EXPERIENCE</span><i>01 — 08</i></div>
+      </div>
+      </div>
+      <div class="hero-chapter-heading">
+        <span>THE MENU, IN CHAPTERS</span>
+        <span class="hero-heading-rule"></span>
+        <span class="hero-chapter-count">08 CHAPTERS <b>·</b> ONE TABLE</span>
+      </div>
       <div class="hero-chapters">
         ${chapters.map(ch => `
-          <a href="#/${ch.id}" class="hero-chapter-card" data-navigate="${ch.id}">
+          <a href="#/${ch.id}" class="hero-chapter-card" data-navigate="${ch.id}" data-tilt>
+            <span class="hcc-art"><img src="${ch.illustration}" alt="" loading="lazy" /></span>
             <span class="hcc-roman">${ch.roman}</span>
             <span class="hcc-title">${ch.title}</span>
           </a>
@@ -331,7 +353,7 @@ function renderMenuItems(items, layout) {
     return `
       <div class="cards-grid">
         ${items.map(item => `
-          <div class="menu-card">
+          <div class="menu-card" data-tilt>
             ${item.label ? `<div class="card-label">${item.label}</div>` : ''}
             <div class="card-title">${item.name} ${badgeHTML(item.badge)}</div>
             <div class="card-desc">${item.desc}</div>
@@ -345,7 +367,7 @@ function renderMenuItems(items, layout) {
     return `
       <div class="fiesta-styles">
         ${items.map(item => `
-          <div class="fiesta-style-item"${item.fullWidth ? ' style="grid-column: 1 / -1;"' : ''}>
+          <div class="fiesta-style-item" data-tilt${item.fullWidth ? ' style="grid-column: 1 / -1;"' : ''}>
             <h4>${item.name}</h4>
             <p>${item.desc}</p>
           </div>
@@ -567,6 +589,8 @@ async function navigateTo(route, skipTransition = false) {
   }
 
   currentRoute = route;
+  setSceneChapter(chapterId || 'home');
+  setupScrollChoreography(appEl);
   if (window.__ricoScanReveals) window.__ricoScanReveals();
   if (chapter) applyChapterParallax();
   updateActiveNav(chapterId);
@@ -737,7 +761,7 @@ function setupKeyboardNav() {
 // ══════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
-  mountCinematicScene();
+  initCinematicScene();
   setupMobileNav();
   setupEventDelegation();
   setupNavbarScroll();
