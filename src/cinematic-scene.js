@@ -26,8 +26,8 @@ uniform vec2 u_mouse;
 uniform float u_points;
 varying float v_points;
 void main() {
-  float yaw = u_time * 0.055 + u_scroll * 0.72 + u_mouse.x * 0.14;
-  float pitch = 0.13 + sin(u_time * 0.11) * 0.035 + u_mouse.y * 0.09;
+  float yaw = u_time * 0.035 + u_scroll * 2.05 + u_mouse.x * 0.18;
+  float pitch = 0.13 + sin(u_time * 0.08) * 0.025 + u_mouse.y * 0.10 + u_scroll * 0.22;
   vec3 p = a_position;
   float ca = cos(yaw), sa = sin(yaw);
   float x = p.x * ca - p.z * sa;
@@ -250,13 +250,30 @@ let depthScrollInstalled = false;
 function updateDepthTransforms() {
   depthScrollQueued = false;
   depthTargets = depthTargets.filter(el => el && el.isConnected);
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+  const viewport = Math.max(window.innerHeight, 1);
   for (const el of depthTargets) {
     const rect = el.getBoundingClientRect();
     const depth = Math.max(0, Math.min(1.4, Number(el.dataset.scrollDepth) || 0.6));
-    const relative = (rect.top + rect.height * 0.5 - window.innerHeight * 0.5) / Math.max(window.innerHeight, 1);
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
-    const shift = reducedMotion ? 0 : Math.max(-1, Math.min(1, relative)) * depth * -28;
+    // Scroll is the timeline: objects tilt, drift and scale as they pass through the viewport.
+    const relative = Math.max(-1, Math.min(1, (rect.top + rect.height * 0.5 - viewport * 0.5) / (viewport * 0.72)));
+    const shift = reducedMotion ? 0 : -relative * depth * 54;
+    const tiltX = reducedMotion ? 0 : relative * -13 * depth;
+    const tiltY = reducedMotion ? 0 : relative * 21 * depth;
+    const scale = reducedMotion ? 1 : 1 + (1 - Math.abs(relative)) * 0.065 * depth;
     el.style.setProperty('--scroll-shift', shift.toFixed(1) + 'px');
+    el.style.setProperty('--scene-tilt-x', tiltX.toFixed(2) + 'deg');
+    el.style.setProperty('--scene-tilt-y', tiltY.toFixed(2) + 'deg');
+    el.style.setProperty('--scene-scale', scale.toFixed(3));
+
+    const pieces = el.querySelectorAll('.dish-art');
+    pieces.forEach((piece, index) => {
+      const factor = [0.62, 1.12, 1.28, 1.42][index % 4];
+      piece.style.setProperty('--object-lift', (reducedMotion ? 0 : -relative * 30 * factor) + 'px');
+      piece.style.setProperty('--object-rotate-x', (reducedMotion ? 0 : tiltX * factor) + 'deg');
+      piece.style.setProperty('--object-rotate-y', (reducedMotion ? 0 : tiltY * factor) + 'deg');
+      piece.style.setProperty('--object-rotate-z', (reducedMotion ? 0 : relative * 5 * factor) + 'deg');
+    });
   }
 }
 
