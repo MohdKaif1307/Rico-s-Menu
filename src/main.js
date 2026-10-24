@@ -31,35 +31,251 @@ function badgeHTML(badge) {
 function mountCinematicScene() {
   if (document.getElementById('scene-canvas')) return;
   const canvas = document.createElement('canvas');
-  canvas.id = 'scene-canvas'; canvas.setAttribute('aria-hidden', 'true'); document.body.prepend(canvas);
-  const context = canvas.getContext('2d', { alpha: true });
-  if (!context) { canvas.remove(); return; }
+  canvas.id = 'scene-canvas';
+  canvas.setAttribute('aria-hidden', 'true');
+  document.body.prepend(canvas);
+
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const small = window.matchMedia('(max-width: 700px)').matches;
-  let width=0,height=0;
-  const pointer={x:.5,y:.5};
-  const particles=Array.from({length:small?34:66},(_,i)=>({x:Math.random(),y:Math.random(),z:.2+Math.random()*.8,radius:.5+Math.random()*1.6,phase:Math.random()*Math.PI*2,gold:i%5===0}));
-  function resize(){const dpr=Math.min(window.devicePixelRatio||1,small?1.25:1.7);width=window.innerWidth;height=window.innerHeight;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';context.setTransform(dpr,0,0,dpr,0,0);}
-  function draw(time=0){
-    context.clearRect(0,0,width,height);
-    const scrollShift=Math.max(-1,Math.min(1,window.scrollY/Math.max(1,document.documentElement.scrollHeight-height)));
-    for(const p of particles){
-      const x=(((p.x*width+(pointer.x-.5)*20*p.z+Math.sin((reduced?0:time*.000018)+p.phase)*12*p.z)%width)+width)%width;
-      const y=(((p.y*height+(pointer.y-.5)*16*p.z-scrollShift*28*p.z)%height)+height)%height;
-      const pulse=reduced?.5:.35+(Math.sin(time*.001+p.phase)+1)*.3;
-      context.beginPath();context.fillStyle=p.gold?'rgba(237,207,124,'+(pulse*.7)+')':'rgba(207,237,216,'+(pulse*.35)+')';context.arc(x,y,p.radius*p.z,0,Math.PI*2);context.fill();
+  const pointer = { x: 0, y: 0 };
+  let width = 0, height = 0;
+
+  // Render real 3D forms directly with WebGL, without adding a runtime dependency.
+  const gl = canvas.getContext('webgl', { alpha: true, antialias: !small, premultipliedAlpha: false });
+  if (!gl) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { canvas.remove(); return; }
+    const particles = Array.from({ length: small ? 26 : 44 }, () => ({
+      x: Math.random(), y: Math.random(), r: .7 + Math.random() * 1.7, phase: Math.random() * 6.28
+    }));
+    function resizeFallback() {
+      const dpr = Math.min(window.devicePixelRatio || 1, small ? 1.25 : 1.5);
+      width = window.innerWidth; height = window.innerHeight;
+      canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+      canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawFallback(0);
     }
-    const glowX=width*(.5+(pointer.x-.5)*.12),glowY=height*(.28+(pointer.y-.5)*.08-scrollShift*.08);
-    const glow=context.createRadialGradient(glowX,glowY,0,glowX,glowY,Math.max(width,height)*.42);glow.addColorStop(0,'rgba(222,186,93,.065)');glow.addColorStop(1,'rgba(222,186,93,0)');context.fillStyle=glow;context.fillRect(0,0,width,height);
-    if(!reduced) window.requestAnimationFrame(draw);
+    function drawFallback(time) {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(231, 199, 111, ' + (.18 + (Math.sin(time * .001 + p.phase) + 1) * .14) + ')';
+        ctx.arc(p.x * width + pointer.x * 12, p.y * height + pointer.y * 10, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      if (!reduced) window.requestAnimationFrame(drawFallback);
+    }
+    resizeFallback();
+    window.addEventListener('resize', resizeFallback, { passive: true });
+    if (!reduced) window.addEventListener('pointermove', e => {
+      pointer.x = e.clientX / Math.max(1, width) - .5;
+      pointer.y = e.clientY / Math.max(1, height) - .5;
+    }, { passive: true });
+    return;
   }
-  resize();draw();window.addEventListener('resize',resize,{passive:true});
-  if(!reduced) window.addEventListener('pointermove',e=>{pointer.x=e.clientX/Math.max(1,width);pointer.y=e.clientY/Math.max(1,height);},{passive:true});
-  const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('is-revealed');observer.unobserve(entry.target);}}),{threshold:.12});
-  window.__ricoRevealObserver=observer;
-  window.__ricoScanReveals=function(){if(reduced)return;document.querySelectorAll('.page-chapter .section-header,.page-chapter .subcategory,.page-chapter .menu-card,.page-chapter .menu-item,.page-chapter .fiesta-style-item,.page-chapter .filling-chip').forEach(el=>{if(el.dataset.reveal==='true')return;el.dataset.reveal='true';observer.observe(el);});};
+
+  const vertexSource = [
+    'attribute vec3 aPosition;',
+    'attribute vec3 aNormal;',
+    'uniform mat4 uModel;',
+    'uniform mat4 uMvp;',
+    'varying vec3 vNormal;',
+    'varying vec3 vWorldPosition;',
+    'void main(){',
+    '  vec4 world = uModel * vec4(aPosition, 1.0);',
+    '  vWorldPosition = world.xyz;',
+    '  vNormal = mat3(uModel) * aNormal;',
+    '  gl_Position = uMvp * vec4(aPosition, 1.0);',
+    '}'
+  ].join('\\n');
+  const fragmentSource = [
+    'precision mediump float;',
+    'uniform vec3 uColor;',
+    'uniform vec3 uLightPosition;',
+    'uniform float uOpacity;',
+    'varying vec3 vNormal;',
+    'varying vec3 vWorldPosition;',
+    'void main(){',
+    '  vec3 N = normalize(vNormal);',
+    '  vec3 L = normalize(uLightPosition - vWorldPosition);',
+    '  vec3 V = normalize(vec3(0.0, 0.0, 8.0) - vWorldPosition);',
+    '  float diffuse = max(dot(N, L), 0.0);',
+    '  float rim = pow(1.0 - max(dot(N, V), 0.0), 2.2);',
+    '  float specular = pow(max(dot(reflect(-L, N), V), 0.0), 24.0);',
+    '  vec3 color = uColor * (0.24 + diffuse * 0.70) + vec3(0.20, 0.15, 0.055) * rim + vec3(0.28, 0.23, 0.12) * specular;',
+    '  gl_FragColor = vec4(color, uOpacity * (0.76 + rim * 0.24));',
+    '}'
+  ].join('\\n');
+
+  function compileShader(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.warn('Rico’s 3D scene shader unavailable:', gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
+  }
+  const vs = compileShader(gl.VERTEX_SHADER, vertexSource);
+  const fs = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
+  if (!vs || !fs) { canvas.remove(); return; }
+  const program = gl.createProgram();
+  gl.attachShader(program, vs); gl.attachShader(program, fs); gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.warn('Rico’s 3D scene could not link:', gl.getProgramInfoLog(program));
+    canvas.remove(); return;
+  }
+  gl.useProgram(program);
+  const loc = {
+    position: gl.getAttribLocation(program, 'aPosition'),
+    normal: gl.getAttribLocation(program, 'aNormal'),
+    model: gl.getUniformLocation(program, 'uModel'),
+    mvp: gl.getUniformLocation(program, 'uMvp'),
+    color: gl.getUniformLocation(program, 'uColor'),
+    light: gl.getUniformLocation(program, 'uLightPosition'),
+    opacity: gl.getUniformLocation(program, 'uOpacity')
+  };
+
+  function createMesh(positions, normals, indices) {
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    return { positionBuffer, normalBuffer, indexBuffer, count: indices.length };
+  }
+  function makeSphere(rows, cols) {
+    const p = [], n = [], ix = [];
+    for (let row = 0; row <= rows; row++) {
+      const v = row / rows, theta = v * Math.PI;
+      for (let col = 0; col <= cols; col++) {
+        const u = col / cols, phi = u * Math.PI * 2;
+        const x = Math.sin(theta) * Math.cos(phi), y = Math.cos(theta), z = Math.sin(theta) * Math.sin(phi);
+        p.push(x, y, z); n.push(x, y, z);
+      }
+    }
+    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+      const a = row * (cols + 1) + col, b = a + cols + 1;
+      ix.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+    return createMesh(p, n, ix);
+  }
+  function makeTorus(rows, cols, innerRadius) {
+    const p = [], n = [], ix = [], major = 1;
+    for (let row = 0; row <= rows; row++) {
+      const u = row / rows * Math.PI * 2;
+      for (let col = 0; col <= cols; col++) {
+        const v = col / cols * Math.PI * 2;
+        const cosV = Math.cos(v), sinV = Math.sin(v), cosU = Math.cos(u), sinU = Math.sin(u);
+        p.push((major + innerRadius * cosV) * cosU, (major + innerRadius * cosV) * sinU, innerRadius * sinV);
+        n.push(cosV * cosU, cosV * sinU, sinV);
+      }
+    }
+    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+      const a = row * (cols + 1) + col, b = a + cols + 1;
+      ix.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+    return createMesh(p, n, ix);
+  }
+  function identity() {
+    const m = new Float32Array(16); m[0] = m[5] = m[10] = m[15] = 1; return m;
+  }
+  function multiply(a, b) {
+    const out = new Float32Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+      out[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+    return out;
+  }
+  function translation(x, y, z) { const m = identity(); m[12] = x; m[13] = y; m[14] = z; return m; }
+  function scaleMatrix(x, y, z) { const m = identity(); m[0] = x; m[5] = y; m[10] = z; return m; }
+  function rotationX(a) { const m = identity(), c = Math.cos(a), s = Math.sin(a); m[5] = c; m[6] = s; m[9] = -s; m[10] = c; return m; }
+  function rotationY(a) { const m = identity(), c = Math.cos(a), s = Math.sin(a); m[0] = c; m[2] = -s; m[8] = s; m[10] = c; return m; }
+  function rotationZ(a) { const m = identity(), c = Math.cos(a), s = Math.sin(a); m[0] = c; m[1] = s; m[4] = -s; m[5] = c; return m; }
+  function perspective(fov, aspect, near, far) {
+    const f = 1 / Math.tan(fov / 2), nf = 1 / (near - far), m = new Float32Array(16);
+    m[0] = f / aspect; m[5] = f; m[10] = (far + near) * nf; m[11] = -1; m[14] = (2 * far * near) * nf;
+    return m;
+  }
+  function modelMatrix(item, time, scrollRatio) {
+    const drift = reduced ? 0 : Math.sin(time * item.speed + item.phase);
+    const rx = item.rotation[0] + (reduced ? 0 : time * item.spinX);
+    const ry = item.rotation[1] + (reduced ? 0 : time * item.spinY);
+    const rz = item.rotation[2] + (reduced ? 0 : time * item.spinZ);
+    const tx = item.position[0] + pointer.x * .23 * item.depth;
+    const ty = item.position[1] + drift * .16 + pointer.y * .20 * item.depth - scrollRatio * .28 * item.depth;
+    let m = translation(tx, ty, item.position[2]);
+    m = multiply(m, rotationZ(rz));
+    m = multiply(m, rotationY(ry));
+    m = multiply(m, rotationX(rx));
+    return multiply(m, scaleMatrix(item.scale[0], item.scale[1], item.scale[2]));
+  }
+
+  const sphere = makeSphere(16, 24);
+  const torus = makeTorus(18, 48, .19);
+  const objects = [
+    { mesh: torus, position: [-4.6, 1.35, -.8], scale: [.77,.77,.77], rotation: [.45,.15,.15], color: [.82,.60,.25], opacity:.48, speed:.65, phase:.2, spinX:.09, spinY:.12, spinZ:.18, depth:1.0 },
+    { mesh: sphere, position: [4.8, -.9, -1.3], scale: [.70,.70,.70], rotation: [.1,.2,.0], color: [.37,.80,.63], opacity:.35, speed:.8, phase:1.4, spinX:.05, spinY:.13, spinZ:.04, depth:.8 },
+    { mesh: sphere, position: [-4.3, -1.5, -.2], scale: [.39,.39,.39], rotation: [.3,.1,.0], color: [.91,.74,.39], opacity:.45, speed:.9, phase:2.1, spinX:.12, spinY:.1, spinZ:.08, depth:1.1 },
+    { mesh: torus, position: [4.45, 1.55, -1.0], scale: [.55,.55,.55], rotation: [1.08,.2,.45], color: [.57,.81,.64], opacity:.33, speed:.72, phase:2.5, spinX:.1, spinY:.15, spinZ:.08, depth:.7 },
+    { mesh: sphere, position: [3.65, 2.05, -2.0], scale: [.24,.24,.24], rotation: [0,0,0], color: [.96,.82,.48], opacity:.55, speed:1.1, phase:3.2, spinX:.1, spinY:.2, spinZ:.1, depth:.6 },
+    { mesh: torus, position: [-3.9, .1, -1.4], scale: [.34,.34,.34], rotation: [1.2,.4,.2], color: [.57,.80,.64], opacity:.35, speed:.8, phase:4.1, spinX:.14, spinY:.09, spinZ:.2, depth:.8 }
+  ];
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.clearColor(0, 0, 0, 0);
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, small ? 1.25 : 1.7);
+    width = window.innerWidth; height = window.innerHeight;
+    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+    canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (reduced) window.requestAnimationFrame(render);
+  }
+  function render(timestamp) {
+    const time = reduced ? 0 : timestamp * .001;
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.useProgram(program);
+    const view = translation(0, 0, -8);
+    const vp = multiply(perspective(Math.PI / 3, width / Math.max(1, height), .1, 100), view);
+    gl.uniform3f(loc.light, -.8, 2.8, 5.5);
+    const scrollRatio = Math.min(1, window.scrollY / Math.max(1, document.documentElement.scrollHeight - height));
+    objects.forEach(item => {
+      const model = modelMatrix(item, time, scrollRatio);
+      gl.uniformMatrix4fv(loc.model, false, model);
+      gl.uniformMatrix4fv(loc.mvp, false, multiply(vp, model));
+      gl.uniform3fv(loc.color, new Float32Array(item.color));
+      gl.uniform1f(loc.opacity, item.opacity);
+      gl.bindBuffer(gl.ARRAY_BUFFER, item.mesh.positionBuffer);
+      gl.enableVertexAttribArray(loc.position);
+      gl.vertexAttribPointer(loc.position, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, item.mesh.normalBuffer);
+      gl.enableVertexAttribArray(loc.normal);
+      gl.vertexAttribPointer(loc.normal, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, item.mesh.indexBuffer);
+      gl.drawElements(gl.TRIANGLES, item.mesh.count, gl.UNSIGNED_SHORT, 0);
+    });
+    if (!reduced) window.requestAnimationFrame(render);
+  }
+  resize();
+  window.requestAnimationFrame(render);
+  window.addEventListener('resize', resize, { passive: true });
+  if (!reduced) window.addEventListener('pointermove', e => {
+    pointer.x = e.clientX / Math.max(1, width) - .5;
+    pointer.y = e.clientY / Math.max(1, height) - .5;
+  }, { passive: true });
+  else window.addEventListener('scroll', () => window.requestAnimationFrame(render), { passive: true });
 }
-let chapterParallaxHandler = null;
+
 function applyChapterParallax(){
  if(chapterParallaxHandler) window.removeEventListener('scroll', chapterParallaxHandler);
  chapterParallaxHandler = null;
