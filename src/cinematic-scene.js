@@ -1,9 +1,8 @@
 /*
  * Rico's — cinematic 3D scene.
  * A lightweight WebGL orbital environment with perspective projection,
- * scroll-reactive camera movement, chapter palettes and a 2D fallback.
+ * subtle scroll-reactive camera movement, palette accents and a 2D fallback.
  */
-import gsap from 'gsap';
 
 const THEMES = {
   home:       { accent: [0.83, 0.67, 0.31], glow: 'rgba(6,183,145,.19)', css: '#d4af55' },
