@@ -244,19 +244,50 @@ export function initCinematicScene() {
   if (reducedMotion) { if(gl) drawWebGL(startTime); else drawFallback(startTime); }
   else requestAnimationFrame(animate);
 }
-export function setupScrollChoreography(container) {
-  if (!container || !('IntersectionObserver' in window)) return;
-  const targets=container.querySelectorAll('.subcategory,.pizza-badge-wrapper,.menu-note,.chapter-nav');
-  if (!targets.length) return;
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-    targets.forEach(el=>{el.classList.add('scene-in-view');gsap.set(el,{opacity:1,y:0,rotateX:0,clearProps:'transform'});});
-    return;
+let depthTargets = [];
+let depthScrollQueued = false;
+let depthScrollInstalled = false;
+
+function updateDepthTransforms() {
+  depthScrollQueued = false;
+  depthTargets = depthTargets.filter(el => el && el.isConnected);
+  for (const el of depthTargets) {
+    const rect = el.getBoundingClientRect();
+    const depth = Math.max(0, Math.min(1.4, Number(el.dataset.scrollDepth) || 0.6));
+    const relative = (rect.top + rect.height * 0.5 - window.innerHeight * 0.5) / Math.max(window.innerHeight, 1);
+    const shift = Math.max(-1, Math.min(1, relative)) * depth * -28;
+    el.style.setProperty('--scroll-shift', shift.toFixed(1) + 'px');
   }
-  const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
-    if(!entry.isIntersecting)return;
-    const el=entry.target;el.classList.add('scene-in-view');
-    gsap.to(el,{opacity:1,y:0,rotateX:0,duration:.68,ease:'power2.out',overwrite:'auto'});
-    observer.unobserve(el);
-  }),{threshold:.12,rootMargin:'0px 0px -8% 0px'});
-  targets.forEach(el=>{el.classList.add('scene-scroll-reveal');gsap.set(el,{opacity:0,y:24,rotateX:2,transformPerspective:1000});observer.observe(el);});
+}
+
+function queueDepthUpdate() {
+  if (depthScrollQueued) return;
+  depthScrollQueued = true;
+  window.requestAnimationFrame(updateDepthTransforms);
+}
+
+export function setupScrollChoreography(container) {
+  if (!container) return;
+
+  // Content is visible immediately. Scrolling adds depth to illustrations only,
+  // never a delayed opacity reveal or a staged wait for menu text.
+  container.querySelectorAll('.scene-scroll-reveal').forEach(el => {
+    el.classList.remove('scene-scroll-reveal');
+    el.classList.add('scene-in-view');
+    el.style.opacity = '1';
+    el.style.transform = '';
+  });
+
+  container.querySelectorAll('.subcategory,.pizza-badge-wrapper,.menu-note,.chapter-nav,.menu-card,.menu-item,.fiesta-style-item,.filling-chip').forEach(el => {
+    el.style.opacity = '1';
+    el.style.removeProperty('transform');
+  });
+
+  depthTargets = Array.from(container.querySelectorAll('[data-scroll-depth]'));
+  updateDepthTransforms();
+  if (!depthScrollInstalled) {
+    depthScrollInstalled = true;
+    window.addEventListener('scroll', queueDepthUpdate, { passive: true });
+    window.addEventListener('resize', queueDepthUpdate, { passive: true });
+  }
 }
