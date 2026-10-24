@@ -1169,3 +1169,6 @@ body { background: radial-gradient(ellipse at 50% 0%, rgba(230,194,103,.14), tra
 @keyframes rico-float { 0%,100% { transform:translateY(0) rotateX(0deg); } 50% { transform:translateY(-7px) rotateX(.5deg); } }
 @media (max-width:700px) { .hero h1 { font-size:clamp(5rem,23vw,8.5rem); } .hero-chapter-card { backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); } #scene-canvas { opacity:.46; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; } [data-reveal="true"] { opacity:1; transform:none; } }
+
+/* Keep page content above the atmospheric WebGL canvas. */
+footer.footer { position: relative; z-index: 1; }
