@@ -255,7 +255,8 @@ function updateDepthTransforms() {
     const rect = el.getBoundingClientRect();
     const depth = Math.max(0, Math.min(1.4, Number(el.dataset.scrollDepth) || 0.6));
     const relative = (rect.top + rect.height * 0.5 - window.innerHeight * 0.5) / Math.max(window.innerHeight, 1);
-    const shift = Math.max(-1, Math.min(1, relative)) * depth * -28;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+    const shift = reducedMotion ? 0 : Math.max(-1, Math.min(1, relative)) * depth * -28;
     el.style.setProperty('--scroll-shift', shift.toFixed(1) + 'px');
   }
 }
