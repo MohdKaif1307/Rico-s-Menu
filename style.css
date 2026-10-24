@@ -1454,6 +1454,7 @@ body {
   min-height:132px; padding:15px 16px; border-radius:18px;
   background:linear-gradient(145deg,rgba(247,246,225,.12),rgba(39,91,70,.24)); border:1px solid rgba(232,201,110,.25);
   box-shadow:0 12px 28px rgba(17,54,43,.10),inset 0 1px rgba(255,255,255,.07); color:var(--text-cream);
+  transform:translate3d(0,var(--scroll-shift,0px),0) rotateX(var(--scene-tilt-x,0deg)) rotateY(var(--scene-tilt-y,0deg)) scale(var(--scene-scale,1));
   backdrop-filter:blur(8px); transform-style:preserve-3d; transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
 }
 .hero-chapter-card::before { content:none; }
