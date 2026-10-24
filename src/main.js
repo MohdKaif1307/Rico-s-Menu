@@ -482,6 +482,13 @@ function renderChapter(chapter) {
           ${chapter.desc ? `<p class="section-desc">${chapter.desc}</p>` : ''}
           <div class="section-divider"><div class="line"></div><div class="dot"></div><div class="line"></div></div>
         </div>
+        <div class="chapter-cover-scene" data-tilt aria-hidden="true">
+          <div class="chapter-poster">
+            <img src="${chapter.chapterImage || chapter.illustration}" alt="" loading="lazy" />
+            <div class="poster-glint"></div>
+            <div class="poster-index"><span>${chapter.roman}</span><i>RICO'S / MENU</i></div>
+          </div>
+        </div>
 
         ${chapter.pizzaBadge ? `
           <div class="pizza-badge-wrapper">
