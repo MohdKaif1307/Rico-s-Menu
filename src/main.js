@@ -26,6 +26,46 @@ function badgeHTML(badge) {
 //  RENDERERS
 // ══════════════════════════════════════════
 
+
+/* ── Lightweight cinematic scene and scroll reveals ───────────────────── */
+function mountCinematicScene() {
+  if (document.getElementById('scene-canvas')) return;
+  const canvas = document.createElement('canvas');
+  canvas.id = 'scene-canvas'; canvas.setAttribute('aria-hidden', 'true'); document.body.prepend(canvas);
+  const context = canvas.getContext('2d', { alpha: true });
+  if (!context) { canvas.remove(); return; }
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const small = window.matchMedia('(max-width: 700px)').matches;
+  let width=0,height=0;
+  const pointer={x:.5,y:.5};
+  const particles=Array.from({length:small?34:66},(_,i)=>({x:Math.random(),y:Math.random(),z:.2+Math.random()*.8,radius:.5+Math.random()*1.6,phase:Math.random()*Math.PI*2,gold:i%5===0}));
+  function resize(){const dpr=Math.min(window.devicePixelRatio||1,small?1.25:1.7);width=window.innerWidth;height=window.innerHeight;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';context.setTransform(dpr,0,0,dpr,0,0);}
+  function draw(time=0){
+    context.clearRect(0,0,width,height);
+    const scrollShift=Math.max(-1,Math.min(1,window.scrollY/Math.max(1,document.documentElement.scrollHeight-height)));
+    for(const p of particles){
+      const x=(((p.x*width+(pointer.x-.5)*20*p.z+Math.sin((reduced?0:time*.000018)+p.phase)*12*p.z)%width)+width)%width;
+      const y=(((p.y*height+(pointer.y-.5)*16*p.z-scrollShift*28*p.z)%height)+height)%height;
+      const pulse=reduced?.5:.35+(Math.sin(time*.001+p.phase)+1)*.3;
+      context.beginPath();context.fillStyle=p.gold?'rgba(237,207,124,'+(pulse*.7)+')':'rgba(207,237,216,'+(pulse*.35)+')';context.arc(x,y,p.radius*p.z,0,Math.PI*2);context.fill();
+    }
+    const glowX=width*(.5+(pointer.x-.5)*.12),glowY=height*(.28+(pointer.y-.5)*.08-scrollShift*.08);
+    const glow=context.createRadialGradient(glowX,glowY,0,glowX,glowY,Math.max(width,height)*.42);glow.addColorStop(0,'rgba(222,186,93,.065)');glow.addColorStop(1,'rgba(222,186,93,0)');context.fillStyle=glow;context.fillRect(0,0,width,height);
+    if(!reduced) window.requestAnimationFrame(draw);
+  }
+  resize();draw();window.addEventListener('resize',resize,{passive:true});
+  if(!reduced) window.addEventListener('pointermove',e=>{pointer.x=e.clientX/Math.max(1,width);pointer.y=e.clientY/Math.max(1,height);},{passive:true});
+  const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('is-revealed');observer.unobserve(entry.target);}}),{threshold:.12});
+  window.__ricoRevealObserver=observer;
+  window.__ricoScanReveals=function(){if(reduced)return;document.querySelectorAll('.page-chapter .section-header,.page-chapter .subcategory,.page-chapter .menu-card,.page-chapter .menu-item,.page-chapter .fiesta-style-item,.page-chapter .filling-chip').forEach(el=>{if(el.dataset.reveal==='true')return;el.dataset.reveal='true';observer.observe(el);});};
+}
+function applyChapterParallax(){
+ const header=document.querySelector('.page-chapter .section-header');
+ if(!header||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const update=()=>{const rect=header.getBoundingClientRect();const progress=Math.max(-1,Math.min(1,(window.innerHeight*.45-rect.top)/Math.max(1,window.innerHeight)));header.style.transform='translate3d(0,'+(-progress*9).toFixed(1)+'px,0)';};
+ window.addEventListener('scroll',update,{passive:true});update();
+}
+
 function renderHero() {
   return `
     <section class="hero" id="hero">
@@ -302,6 +342,8 @@ async function navigateTo(route, skipTransition = false) {
   }
 
   currentRoute = route;
+  if (window.__ricoScanReveals) window.__ricoScanReveals();
+  if (chapter) applyChapterParallax();
   updateActiveNav(chapterId);
   isTransitioning = false;
 }
@@ -470,6 +512,7 @@ function setupKeyboardNav() {
 // ══════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
+  mountCinematicScene();
   setupMobileNav();
   setupEventDelegation();
   setupNavbarScroll();
