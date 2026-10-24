@@ -1194,7 +1194,7 @@ body {
 }
 #cinematic-scene {
   position:fixed; inset:0; z-index:0; display:block; width:100%; height:100%;
-  pointer-events:none; opacity:.64; mix-blend-mode:screen; contain:strict;
+  pointer-events:none; opacity:.76; mix-blend-mode:screen; contain:strict;
 }
 #app,.footer { position:relative; z-index:1; }
 .navbar { z-index:1000; }
@@ -1391,7 +1391,7 @@ body {
 #app { position:relative; z-index:1; background:transparent; }
 #cinematic-scene {
   position:fixed; inset:0; z-index:0; width:100%; height:100%;
-  pointer-events:none; opacity:.64; mix-blend-mode:screen;
+  pointer-events:none; opacity:.76; mix-blend-mode:screen;
 }
 .navbar { background:rgba(58,122,102,.58); border-bottom:1px solid rgba(232,201,110,.12); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
 .navbar.scrolled { background:rgba(45,98,82,.94); border-bottom-color:rgba(232,201,110,.18); box-shadow:0 8px 26px rgba(17,54,43,.16); }
@@ -1404,7 +1404,7 @@ body {
   background:
     radial-gradient(ellipse at 72% 36%,rgba(117,197,154,.21),transparent 38%),
     radial-gradient(ellipse at 12% 10%,rgba(214,175,85,.12),transparent 35%),
-    linear-gradient(180deg,rgba(57,121,100,.97),rgba(53,111,91,.96) 76%,rgba(49,101,83,.97));
+    linear-gradient(180deg,rgba(57,121,100,.84),rgba(53,111,91,.82) 76%,rgba(49,101,83,.84));
 }
 .hero.hero-cinematic::before { opacity:.3; background-image:linear-gradient(rgba(242,219,161,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(242,219,161,.055) 1px,transparent 1px); mask-image:linear-gradient(180deg,black,transparent 90%); }
 .hero.hero-cinematic::after { opacity:.2; }
@@ -1467,9 +1467,9 @@ body {
 .hero.hero-cinematic .scroll-indicator { display:none; }
 
 .menu-section, .menu-section:nth-child(even) {
-  background:rgba(69,140,118,.95); color:var(--text-cream); border-bottom:1px solid rgba(232,201,110,.14);
+  background:rgba(69,140,118,.79); color:var(--text-cream); border-bottom:1px solid rgba(232,201,110,.14);
 }
-.menu-section:nth-child(even) { background:rgba(58,122,102,.95); }
+.menu-section:nth-child(even) { background:rgba(58,122,102,.77); }
 .menu-section::before { opacity:.38; background:radial-gradient(ellipse at 80% 4%,rgba(160,210,168,.15),transparent 40%); }
 .illustration-overlay { display:none; }
 .page-chapter .container { position:relative; z-index:2; }
